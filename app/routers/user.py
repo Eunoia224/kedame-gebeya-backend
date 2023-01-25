@@ -39,7 +39,7 @@ def get_user(id: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"product with id: {id} was not found.")
+                            detail=f"user with id: {id} was not found.")
     return user
 
 

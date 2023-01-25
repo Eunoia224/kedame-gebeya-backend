@@ -12,24 +12,23 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=List[schemas.RateReturn])
+@router.get("/", response_model=List[schemas.Product])
 async def get_products(db: Session = Depends(get_db), limit: int = 0, skip: int = 0, search: Optional[str] = ""):
     """ This is the root of the API."""
     # products?limit=10
     # products?skip=10
     # to chain
     # products?limit=2&skip=10
-    print(search)
     # products = db.query(models.Product).filter(
     #     models.Product.product_name.contains(search)).offset(skip).all()
     # in case there is a need to limit the number of product we send
     # products = db.query(models.Product).limit(limit).all()
     # if we need to skip a said number of products (USEFUL FOR pagination)
-    # products = db.query(models.Product).offset(skip).all()
-    results = db.query(models.Product, func.count(models.Rate.product_id)
-                       .label("Ratings")).join(models.Rate, models.Rate
-                                               .product_id ==models.Product.id, isouter=True).group_by(models.Product.id).filter(models.Product.product_name.contains(search)).offset(skip).all()
-    return results
+    products = db.query(models.Product).offset(skip).all()
+    # results = db.query(models.Product, func.count(models.Rate.product_id)
+    #                    .label("Ratings")).join(models.Rate, models.Rate
+                                            #    .product_id ==models.Product.id, isouter=True).group_by(models.Product.id).filter(models.Product.product_name.contains(search)).offset(skip).all()
+    return products
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Product)
@@ -49,7 +48,7 @@ async def create_product(product: schemas.ProductCreate, db: Session = Depends(g
     return new_product
 
 
-@router.get("/{id}", response_model=schemas.RateReturn)
+@router.get("/{id}", response_model=schemas.Product)
 def get_product(id: str, response: Response, db: Session = Depends(get_db)):
     """grab a product using it's id.
 
@@ -76,10 +75,9 @@ def delete_product(id: str, db: Session = Depends(get_db), current_user: str = D
     if deleted_product.first() == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"product with id: {id} was not found.")
-    if product.owner_id is not current_user.id:
+    if product.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Not authorized to perform this action (You might not have created this product listing).")
-
     deleted_product.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -100,7 +98,7 @@ def update_product(id: str, updated_product: schemas.ProductCreate, db: Session 
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"product with id: {id} was not found")
-    if product.owner_id is not current_user.id:
+    if product.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Not authorized to perform this action (You might not have created this product listing) .")
     product_query.update(updated_product.dict(), synchronize_session=False)

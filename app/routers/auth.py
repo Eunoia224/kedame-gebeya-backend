@@ -17,7 +17,8 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
     """
     user = db.query(models.User).filter(
         models.User.email == user_credentials.username).first()
-    if not user:
+    admin = db.query(models.SuperAdmin).filter(models.SuperAdmin.email == user_credentials.username).first()
+    if not user or admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Invalid, User Not Found.")
     if not utils.verify(user_credentials.password, user.password):
